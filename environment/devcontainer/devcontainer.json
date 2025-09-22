@@ -1,0 +1,72 @@
+{
+  "name": "WebRTC System Development Consultation Agent",
+  "dockerComposeFile": [
+    "./docker-compose.yml"
+  ],
+  "service": "webrtc-agent",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-eslint",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "ms-vscode.test-adapter-converter",
+        "hbenl.vscode-test-explorer",
+        "bierner.markdown-mermaid",
+        "jebbs.plantuml",
+        "ms-vscode.vscode-docker",
+        "github.copilot",
+        "github.copilot-chat",
+        "bradlc.vscode-tailwindcss",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "gruntfuggly.todo-tree",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "settings": {
+        "typescript.preferences.quoteStyle": "single",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": true
+        },
+        "files.exclude": {
+          "**/node_modules": true,
+          "**/dist": true,
+          "**/build": true
+        },
+        "search.exclude": {
+          "**/node_modules": true,
+          "**/dist": true,
+          "**/build": true
+        },
+        "emmet.includeLanguages": {
+          "typescript": "html"
+        },
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "forwardPorts": [3000, 9229],
+  "portsAttributes": {
+    "3000": {
+      "label": "WebRTC Agent Server",
+      "onAutoForward": "notify"
+    },
+    "9229": {
+      "label": "Debug Port",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "npm install",
+  "postStartCommand": "echo 'WebRTC Agent DevContainer is ready!'",
+  "remoteUser": "node"
+}
