@@ -1,0 +1,36 @@
+# Frontend-only Dockerfile
+FROM oven/bun:1.0-alpine as base
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json bun.lockb bunfig.toml ./
+COPY tsconfig*.json vite.config.ts ./
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Copy source code
+COPY src/frontend ./src/frontend
+COPY src/shared ./src/shared
+
+# Development stage
+FROM base as development
+EXPOSE 3000
+CMD ["bun", "run", "dev:frontend"]
+
+# Build stage
+FROM base as build
+RUN bun run build:frontend
+
+# Production stage
+FROM nginx:alpine as production
+COPY --from=build /app/dist/frontend /usr/share/nginx/html
+COPY environment/docker/nginx.conf /etc/nginx/nginx.conf
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

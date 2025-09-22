@@ -1,0 +1,79 @@
+# Go Backend Dockerfile
+FROM golang:1.21-alpine AS base
+
+# Install system dependencies for audio processing and WebRTC
+RUN apk add --no-cache \
+    ffmpeg \
+    git \
+    make \
+    gcc \
+    musl-dev \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev \
+    pixman-dev \
+    pangomm-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    curl \
+    bash \
+    ca-certificates
+
+WORKDIR /app
+
+# Copy go mod files
+COPY src/backend/go.mod src/backend/go.sum ./
+
+# Download dependencies
+RUN go mod download && go mod verify
+
+# Copy source code
+COPY src/backend ./
+COPY src/shared ../shared
+
+# Development stage
+FROM base AS development
+RUN go install github.com/air-verse/air@latest
+EXPOSE 3001 2345
+CMD ["air", "-c", ".air.toml"]
+
+# Build stage
+FROM base AS build
+# Build the application
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o webrtc-agent cmd/webrtc-agent/main.go
+
+# Test stage
+FROM build AS test
+COPY tests ./tests
+RUN go test -v ./...
+
+# Production stage
+FROM alpine:3.18 AS production
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ffmpeg \
+    ca-certificates \
+    curl
+
+# Create non-root user
+RUN addgroup -g 1001 -S goapp && \
+    adduser -S goapp -u 1001 -G goapp
+
+WORKDIR /app
+
+# Copy binary from build stage
+COPY --from=build /app/webrtc-agent .
+COPY --from=build /app/configs ./configs
+
+# Set ownership
+RUN chown -R goapp:goapp /app
+USER goapp
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
+
+EXPOSE 3001
+CMD ["./webrtc-agent"]

@@ -6,7 +6,8 @@ on:
     tags: [ 'v*' ]
 
 env:
-  NODE_VERSION: '20'
+  GO_VERSION: '1.21'
+  BUN_VERSION: '1.0.0'
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -29,19 +30,27 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push staging image
-        uses: docker/build-push-action@v5
+      - name: Build and push staging image with Bake
+        uses: docker/bake-action@v4
         with:
-          context: .
-          file: environment/docker/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          targets: app
+          set: |
+            app.tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+          files: |
+            ./environment/docker/docker-bake.hcl
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          TAG: staging
+          GO_VERSION: ${{ env.GO_VERSION }}
+          BUN_VERSION: ${{ env.BUN_VERSION }}
 
       - name: Deploy to staging
         run: |
-          echo "Deploying to staging environment..."
+          echo "Deploying to staging environment with Bun..."
           # Add staging deployment commands here
 
   deploy-production:
@@ -67,17 +76,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push production image
-        uses: docker/build-push-action@v5
+      - name: Build and push production image with Bake
+        uses: docker/bake-action@v4
         with:
-          context: .
-          file: environment/docker/Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          targets: production
+          set: |
+            production.tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+          files: |
+            ./environment/docker/docker-bake.hcl
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          TAG: ${{ steps.version.outputs.VERSION }}
+          GO_VERSION: ${{ env.GO_VERSION }}
+          BUN_VERSION: ${{ env.BUN_VERSION }}
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
@@ -91,7 +106,7 @@ jobs:
 
       - name: Deploy to production
         run: |
-          echo "Deploying version ${{ steps.version.outputs.VERSION }} to production..."
+          echo "Deploying version ${{ steps.version.outputs.VERSION }} to production with Bun..."
           # Add production deployment commands here
 
   notify:

@@ -1,0 +1,72 @@
+# Bun configuration file
+# https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Enable cache for faster installs
+cache = true
+
+# Set registry
+registry = "https://registry.npmjs.org/"
+
+# Dependency installation settings
+frozen = false
+exact = false
+
+# Peer dependencies handling
+auto = true
+
+# Optional dependencies
+optional = true
+
+# Dev dependencies in production
+production = false
+
+[install.scopes]
+# Add any scoped registries here if needed
+# "@company" = "https://npm.company.com/"
+
+[run]
+# Shell to use for scripts
+shell = "bash"
+
+# Environment variables
+env = "development"
+
+[test]
+# Test runner settings
+coverage = true
+preload = ["./src/frontend/test/setup.ts"]
+
+[build]
+# Build settings
+target = "node"
+format = "esm"
+splitting = true
+outdir = "./dist"
+
+[transpiler]
+# TypeScript transpilation
+jsx = "react-jsx"
+jsxImportSource = "react"
+
+# Optimize imports
+allowSyntheticDefaultImports = true
+esModuleInterop = true
+
+[macros]
+# Enable macros if needed
+react-server-dom-webpack = false
+
+[dev]
+# Development server settings (when using bun --watch)
+port = 3001
+
+[install.cache]
+# Cache configuration
+dir = "~/.bun/install/cache"
+
+# Package manager features
+[package-manager]
+# Use bun's package manager features
+respectGitignore = true
+followSymlinks = true

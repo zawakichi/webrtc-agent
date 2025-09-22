@@ -1,0 +1,47 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+
+    /* Frontend specific */
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    /* Path mapping for frontend */
+    "baseUrl": "./src/frontend",
+    "paths": {
+      "@/*": ["./"],
+      "@shared/*": ["../shared/*"],
+      "@backend/*": ["../backend/*"]
+    },
+
+    /* Types for frontend */
+    "types": [
+      "vite/client",
+      "@types/react",
+      "@types/react-dom",
+      "vitest/globals"
+    ]
+  },
+  "include": [
+    "src/frontend/**/*.ts",
+    "src/frontend/**/*.tsx",
+    "src/shared/**/*.ts",
+    "tests/frontend/**/*.ts",
+    "tests/frontend/**/*.tsx",
+    "tests/shared/**/*.ts",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/backend"
+  ]
+}

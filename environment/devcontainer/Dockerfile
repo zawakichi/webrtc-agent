@@ -1,4 +1,8 @@
-FROM node:20-bullseye
+# Use multi-stage build for better performance
+FROM node:20-bullseye as node-base
+FROM oven/bun:1.0 as bun-base
+
+FROM node-base
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -43,15 +47,20 @@ RUN groupmod --gid $USER_GID $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-# Install global npm packages
-RUN npm install -g \
+# Install bun
+COPY --from=bun-base /usr/local/bin/bun /usr/local/bin/bun
+RUN ln -s /usr/local/bin/bun /usr/local/bin/bunx
+
+# Install global packages
+RUN bun add -g \
     typescript \
-    ts-node \
-    nodemon \
-    @types/node \
+    tsx \
     prettier \
     eslint \
-    jest \
-    @mermaid-js/mermaid-cli
+    @mermaid-js/mermaid-cli \
+    @playwright/test
+
+# Verify bun installation
+RUN bun --version
 
 USER $USERNAME
