@@ -106,22 +106,34 @@ code .
 # Command Palette で "Dev Containers: Reopen in Container" を実行
 ```
 
-### Docker での開発
+### Task を使った開発（推奨）
 ```bash
-# 環境変数設定
-cp .env.example .env
-# .envファイルを編集してAPIキーを設定
+# プロジェクトの初期セットアップ
+task setup
 
-# 開発環境起動 (Docker Compose)
-docker compose up -d
+# 開発環境起動（全サービス）
+task dev
 
-# Docker Bakeでビルド
-make build
+# ログ確認
+task dev:logs
 
-# Makefileコマンド使用
-make dev          # 開発環境起動
-make dev-logs     # ログ確認
-make dev-stop     # 環境停止
+# 開発環境停止
+task dev:stop
+
+# 利用可能なタスク一覧
+task --list
+```
+
+### Docker Compose での開発
+```bash
+# 開発環境起動
+docker-compose -f environment/docker/docker-compose.dev.yml up -d
+
+# ログ確認
+docker-compose -f environment/docker/docker-compose.dev.yml logs -f
+
+# 環境停止
+docker-compose -f environment/docker/docker-compose.dev.yml down
 ```
 
 ### ローカル開発
@@ -222,17 +234,43 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 # その他の設定は .env.example を参照
 ```
 
-### スクリプト
+### 主要なTaskコマンド
 ```bash
-bun run dev        # 開発サーバー起動 (Frontend + Backend)
-bun run build      # プロダクションビルド
-bun run test       # テスト実行
-bun run lint       # コード検査
-bun run format     # コードフォーマット
-bun run type-check # 型チェック
+# 開発環境
+task dev           # 開発環境起動（全サービス）
+task dev:logs      # ログ確認
+task dev:stop      # 開発環境停止
+task dev:clean     # 開発環境クリーンアップ
+
+# ビルド
+task build         # 全体ビルド
+task build:frontend # フロントエンドビルド
+task build:backend # バックエンドビルド
+task build:docs    # ドキュメントビルド
+
+# テスト
+task test          # 全テスト実行
+task test:unit     # ユニットテスト
+task test:e2e      # E2Eテスト
+task test:bdd      # BDDテスト
+
+# 品質管理
+task lint          # 静的解析
+task format        # コードフォーマット
+
+# データベース
+task db:migrate    # マイグレーション
+task db:seed       # シードデータ投入
+task db:reset      # データベースリセット
+
+# その他
+task setup         # 初期セットアップ
+task clean         # クリーンアップ
+task health        # ヘルスチェック
+task version       # バージョン情報
 ```
 
-### 詳細なスクリプト
+### package.jsonスクリプト（フロントエンド）
 ```bash
 # 開発
 bun run dev:frontend    # Viteフロントエンド開発サーバー
@@ -274,21 +312,41 @@ make build-prod         # 本番用イメージビルド
 ### 使用例
 ```bash
 # 基本ビルド
-docker buildx bake
+task docker:build
 
 # 特定のターゲット
-docker buildx bake frontend backend
+docker buildx bake -f environment/docker/docker-bake.hcl frontend backend
 
 # プッシュ付きビルド
-docker buildx bake --push
+docker buildx bake -f environment/docker/docker-bake.hcl --push
 
-# 環境変数指定
-REGISTRY=ghcr.io IMAGE_NAME=myorg/webrtc-agent docker buildx bake
+# 本番用ビルド
+task docker:build:prod
 ```
 
 ## 📚 ドキュメント
 
-- [仕様書](doc/specifications/SPECIFICATIONS.md)
+プロジェクトの詳細なドキュメントは以下で確認できます：
+
+### オンラインドキュメント
+- **開発時**: http://docs.localhost (開発環境起動時)
+- **GitHub Pages**: https://zawakichi.github.io/webrtc-agent （予定）
+
+### ローカルでドキュメント確認
+```bash
+# MkDocsサーバー起動
+task docs
+
+# または直接
+mkdocs serve
+```
+
+### ドキュメント構成
+- [プロジェクト概要](doc/index.md): プロジェクトの全体像
+- [アーキテクチャ](doc/architecture/): システム設計・クリーンアーキテクチャ
+- [開発ガイド](doc/development/): 開発環境・ワークフロー
+- [API仕様](doc/api/): REST API・WebSocket API
+- [デプロイ](doc/deployment/): Docker・Kubernetes
 - [クリーンアーキテクチャ設計](doc/architecture/clean-architecture.md)
 - [BDDテスト戦略](doc/architecture/bdd-test-strategy.md)
 - [データベース設計](doc/architecture/database-design.md)

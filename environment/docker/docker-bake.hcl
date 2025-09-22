@@ -163,3 +163,15 @@ target "services" {
     redis = "docker-image://redis:7-alpine"
   }
 }
+
+# Documentation container
+target "docs" {
+  context = "."
+  dockerfile = "environment/docker/Dockerfile.docs"
+
+  tags = [
+    "${REGISTRY}/${IMAGE_NAME}:docs-${TAG}"
+  ]
+
+  platforms = ["linux/amd64", "linux/arm64"]
+}

@@ -1,0 +1,128 @@
+# 開発環境用Docker Compose設定
+version: '3.8'
+
+# 環境変数ファイルを読み込み
+env_file:
+  - .env
+
+services:
+  # フロントエンド開発サーバー
+  frontend:
+    build:
+      context: ../..
+      dockerfile: environment/docker/Dockerfile.frontend
+    ports:
+      - "${FRONTEND_PORT}:3000"
+      - "${FRONTEND_HMR_PORT}:3001"  # HMR用
+    volumes:
+      - ../../src/frontend:/app:delegated
+      - /app/node_modules
+    environment:
+      - NODE_ENV=${APP_ENV}
+      - VITE_API_URL=http://localhost:${BACKEND_PORT}
+    depends_on:
+      - backend
+    networks:
+      - ${DOCKER_NETWORK}
+
+  # Goバックエンド開発サーバー
+  backend:
+    build:
+      context: ../..
+      dockerfile: environment/docker/Dockerfile.backend
+      target: development
+    ports:
+      - "${BACKEND_PORT}:3001"
+      - "${BACKEND_DEBUG_PORT}:8080"  # デバッグ用
+    volumes:
+      - ../../src/backend:/app:delegated
+    environment:
+      - GO_ENV=${APP_ENV}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - DEBUG_ENABLED=${DEBUG_ENABLED}
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - ${DOCKER_NETWORK}
+
+  # MkDocsドキュメントサーバー
+  docs:
+    build:
+      context: ../..
+      dockerfile: environment/docker/Dockerfile.docs
+    ports:
+      - "${DOCS_PORT}:8000"
+    volumes:
+      - ../../doc:/docs:delegated
+      - ../../mkdocs.yml:/docs/mkdocs.yml:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - ${DOCKER_NETWORK}
+
+  # MySQL データベース
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../../src/backend/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - ${DOCKER_NETWORK}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis キャッシュ
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ${DOCKER_NETWORK}
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 20s
+      retries: 10
+
+  # Nginx リバースプロキシ（開発用）
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "${NGINX_PORT}:80"
+    volumes:
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+      - docs
+    networks:
+      - ${DOCKER_NETWORK}
+
+volumes:
+  mysql_data:
+    name: ${MYSQL_DATA_VOLUME}
+  redis_data:
+    name: ${REDIS_DATA_VOLUME}
+
+networks:
+  webrtc-dev:
+    name: ${DOCKER_NETWORK}
+    driver: bridge

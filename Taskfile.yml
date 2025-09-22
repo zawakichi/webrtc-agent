@@ -1,0 +1,330 @@
+# Task runner configuration for WebRTC Agent
+# https://taskfile.dev/
+
+version: '3'
+
+vars:
+  DOCKER_COMPOSE_DEV: environment/docker/docker-compose.dev.yml
+  DOCKER_COMPOSE_PROD: environment/docker/compose.yaml
+  DOCKER_BAKE_FILE: environment/docker/docker-bake.hcl
+  FRONTEND_DIR: src/frontend
+  BACKEND_DIR: src/backend
+  DOCS_DIR: doc
+
+tasks:
+  # デフォルトタスク - ヘルプを表示
+  default:
+    desc: "利用可能なタスクを表示"
+    silent: true
+    cmds:
+      - task --list
+
+  # 開発環境管理
+  dev:
+    desc: "開発環境を起動（全サービス）"
+    dir: environment/docker
+    cmds:
+      - docker-compose -f docker-compose.dev.yml up -d
+      - echo "開発環境が起動しました"
+
+  dev:logs:
+    desc: "開発環境のログを表示"
+    dir: environment/docker
+    cmds:
+      - docker-compose -f docker-compose.dev.yml logs -f
+
+  dev:stop:
+    desc: "開発環境を停止"
+    dir: environment/docker
+    cmds:
+      - docker-compose -f docker-compose.dev.yml down
+      - echo "開発環境を停止しました"
+
+  dev:restart:
+    desc: "開発環境を再起動"
+    cmds:
+      - task: dev:stop
+      - task: dev
+
+  dev:clean:
+    desc: "開発環境をクリーンアップ（ボリューム削除）"
+    dir: environment/docker
+    cmds:
+      - docker-compose -f docker-compose.dev.yml down -v
+      - docker system prune -f
+      - echo "開発環境をクリーンアップしました"
+
+  # 個別サービス管理
+  frontend:
+    desc: "フロントエンド開発サーバーを起動"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun run dev:frontend
+
+  backend:
+    desc: "バックエンド開発サーバーを起動"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - air
+
+  docs:
+    desc: "ドキュメントサーバーを起動"
+    cmds:
+      - mkdocs serve --dev-addr=0.0.0.0:8000
+
+  # ビルド関連
+  build:
+    desc: "全体をビルド"
+    cmds:
+      - task: build:frontend
+      - task: build:backend
+
+  build:frontend:
+    desc: "フロントエンドをビルド"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun run build
+
+  build:backend:
+    desc: "バックエンドをビルド"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go build -o ../../dist/backend/webrtc-agent cmd/webrtc-agent/main.go
+
+  build:docs:
+    desc: "ドキュメントをビルド"
+    cmds:
+      - mkdocs build
+
+  # Docker関連
+  docker:build:
+    desc: "Docker Bakeでイメージをビルド"
+    cmds:
+      - docker buildx bake -f {{.DOCKER_BAKE_FILE}}
+
+  docker:build:dev:
+    desc: "開発用Dockerイメージをビルド"
+    cmds:
+      - docker-compose -f {{.DOCKER_COMPOSE_DEV}} build
+
+  docker:build:prod:
+    desc: "本番用Dockerイメージをビルド"
+    cmds:
+      - docker buildx bake -f {{.DOCKER_BAKE_FILE}} production
+
+  # テスト関連
+  test:
+    desc: "全テストを実行"
+    cmds:
+      - task: test:unit
+      - task: test:integration
+
+  test:unit:
+    desc: "ユニットテストを実行"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun run test:unit
+
+  test:integration:
+    desc: "統合テストを実行"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go test -v ./...
+
+  test:e2e:
+    desc: "E2Eテストを実行"
+    cmds:
+      - playwright test --config=tests/e2e/playwright.config.ts
+
+  test:bdd:
+    desc: "BDDテストを実行"
+    cmds:
+      - jest --config=tests/bdd/jest.config.js
+
+  test:coverage:
+    desc: "カバレッジ付きテストを実行"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun run test:coverage
+
+  # 品質管理
+  lint:
+    desc: "コードの静的解析を実行"
+    cmds:
+      - task: lint:frontend
+      - task: lint:backend
+
+  lint:frontend:
+    desc: "フロントエンドの静的解析を実行"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun run lint
+
+  lint:backend:
+    desc: "バックエンドの静的解析を実行"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - golangci-lint run
+
+  format:
+    desc: "コードフォーマットを実行"
+    cmds:
+      - task: format:frontend
+      - task: format:backend
+
+  format:frontend:
+    desc: "フロントエンドのコードフォーマット"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun run format
+
+  format:backend:
+    desc: "バックエンドのコードフォーマット"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go fmt ./...
+      - goimports -w .
+
+  # データベース関連
+  db:migrate:
+    desc: "データベースマイグレーションを実行"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go run scripts/migrate.go
+
+  db:seed:
+    desc: "データベースシードを実行"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go run scripts/seed.go
+
+  db:reset:
+    desc: "データベースをリセット"
+    cmds:
+      - task: db:migrate
+      - task: db:seed
+
+  db:setup:test:
+    desc: "テスト用データベースをセットアップ"
+    env:
+      NODE_ENV: test
+    cmds:
+      - task: db:migrate
+      - task: db:seed
+
+  # 依存関係管理
+  deps:
+    desc: "依存関係をインストール"
+    cmds:
+      - task: deps:frontend
+      - task: deps:backend
+
+  deps:frontend:
+    desc: "フロントエンドの依存関係をインストール"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun install --frozen-lockfile
+
+  deps:backend:
+    desc: "バックエンドの依存関係をインストール"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go mod download
+      - go mod verify
+
+  deps:update:
+    desc: "依存関係を更新"
+    cmds:
+      - task: deps:update:frontend
+      - task: deps:update:backend
+
+  deps:update:frontend:
+    desc: "フロントエンドの依存関係を更新"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - bun update
+
+  deps:update:backend:
+    desc: "バックエンドの依存関係を更新"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - go get -u ./...
+      - go mod tidy
+
+  # クリーンアップ
+  clean:
+    desc: "全体をクリーンアップ"
+    cmds:
+      - task: clean:frontend
+      - task: clean:backend
+      - task: clean:docker
+
+  clean:frontend:
+    desc: "フロントエンドをクリーンアップ"
+    dir: "{{.FRONTEND_DIR}}"
+    cmds:
+      - rm -rf dist node_modules
+
+  clean:backend:
+    desc: "バックエンドをクリーンアップ"
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - rm -rf tmp
+      - go clean -cache
+
+  clean:docker:
+    desc: "Dockerをクリーンアップ"
+    cmds:
+      - docker system prune -f
+      - docker volume prune -f
+
+  # 初期セットアップ
+  setup:
+    desc: "プロジェクトの初期セットアップ"
+    cmds:
+      - echo "WebRTC Agent プロジェクトをセットアップ中..."
+      - task: env:check
+      - task: deps
+      - task: build
+      - echo "セットアップが完了しました"
+
+  # 環境変数チェック
+  env:check:
+    desc: "環境変数設定を確認"
+    dir: environment/docker
+    cmds:
+      - |
+        if [ ! -f .env ]; then
+          echo "⚠️  .envファイルが見つかりません"
+          echo "📝 .env.exampleから.envを作成してください:"
+          echo "   cp .env.example .env"
+          echo "🔑 APIキーなどの設定を更新してください"
+          exit 1
+        else
+          echo "✅ .envファイルが見つかりました"
+        fi
+
+  env:copy:
+    desc: ".env.exampleから.envを作成"
+    dir: environment/docker
+    cmds:
+      - cp .env.example .env
+      - echo "✅ .envファイルを作成しました"
+      - echo "🔑 APIキーなどの設定を更新してください"
+
+  # ヘルプとバージョン情報
+  version:
+    desc: "バージョン情報を表示"
+    silent: true
+    cmds:
+      - echo "WebRTC Agent v0.1.0"
+      - echo "Go version:" && go version
+      - echo "Bun version:" && bun --version
+      - echo "Docker version:" && docker --version
+
+  health:
+    desc: "システムヘルスチェック"
+    cmds:
+      - echo "=== システムヘルスチェック ==="
+      - echo "Docker:" && docker ps --format "table {{.Names}}\t{{.Status}}"
+      - echo "\nサービス確認:"

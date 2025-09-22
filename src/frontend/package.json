@@ -31,7 +31,11 @@
     "start": "./dist/backend/webrtc-agent",
     "start:prod": "NODE_ENV=production ./dist/backend/webrtc-agent",
     "docker:build": "docker build -f environment/docker/Dockerfile -t webrtc-agent .",
-    "docker:dev": "docker-compose -f environment/docker/docker-compose.yml up -d",
+    "docker:dev": "docker-compose -f ../../environment/docker/docker-compose.dev.yml up -d",
+    "docker:dev:logs": "docker-compose -f ../../environment/docker/docker-compose.dev.yml logs -f",
+    "docker:dev:down": "docker-compose -f ../../environment/docker/docker-compose.dev.yml down",
+    "docs:serve": "mkdocs serve --dev-addr=0.0.0.0:8000",
+    "docs:build": "mkdocs build",
     "docker:prod": "docker-compose -f environment/docker/docker-compose.prod.yml up -d",
     "test:reports:generate": "tsx scripts/generate-test-reports.ts"
   },
