@@ -16,15 +16,14 @@ RUN pip install --no-cache-dir \
     mkdocs \
     mkdocs-material \
     mkdocs-mermaid2-plugin \
-    mkdocs-plantuml-plugin \
     mkdocs-awesome-pages-plugin \
     mkdocs-git-revision-date-localized-plugin \
     mkdocs-minify-plugin \
     mkdocs-macros-plugin \
     pymdown-extensions
 
-# ポート8000を公開
-EXPOSE 8000
+# ポート8888を公開
+EXPOSE 8888
 
 # MkDocsの開発サーバーを起動
-CMD ["mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
+CMD ["mkdocs", "serve", "--dev-addr=0.0.0.0:8888"]

@@ -278,7 +278,7 @@ jobs:
         run: npm run test:bdd:e2e
         env:
           DATABASE_URL: mysql://root:test_password@localhost:3306/webrtc_agent_test
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ '{{ secrets.OPENAI_API_KEY }}' }}
 
       - name: Upload BDD Reports
         uses: actions/upload-artifact@v3

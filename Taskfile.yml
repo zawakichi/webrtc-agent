@@ -70,7 +70,9 @@ tasks:
   docs:
     desc: "ドキュメントサーバーを起動"
     cmds:
-      - mkdocs serve --dev-addr=0.0.0.0:8000
+      - echo "MkDocsドキュメントサーバーを起動中..."
+      - echo "アクセス URL - http://localhost:9000/webrtc-agent/"
+      - docker run --rm -v $(pwd)/doc:/docs/docs -v $(pwd)/mkdocs.yml:/docs/mkdocs.yml:ro -p 9000:8000 webrtc-agent-docs
 
   # ビルド関連
   build:
@@ -94,7 +96,8 @@ tasks:
   build:docs:
     desc: "ドキュメントをビルド"
     cmds:
-      - mkdocs build
+      - echo "MkDocsドキュメントをビルド中..."
+      - docker run --rm -v $(pwd)/doc:/docs/docs -v $(pwd)/mkdocs.yml:/docs/mkdocs.yml:ro -v $(pwd)/site:/docs/site webrtc-agent-docs mkdocs build
 
   # Docker関連
   docker:build:
@@ -287,6 +290,7 @@ tasks:
       - task: deps
       - task: build
       - echo "セットアップが完了しました"
+      
 
   # 環境変数チェック
   env:check:

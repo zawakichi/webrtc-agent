@@ -10,7 +10,7 @@ repo_url: https://github.com/zawakichi/webrtc-agent
 edit_uri: edit/main/doc/
 
 # ディレクトリ設定
-docs_dir: doc
+docs_dir: docs
 site_dir: site
 
 # テーマ設定
@@ -65,6 +65,7 @@ plugins:
       type: datetime
       timezone: Asia/Tokyo
       locale: ja
+      fallback_to_build_date: true
   - minify:
       minify_html: true
   - macros
@@ -123,6 +124,14 @@ markdown_extensions:
 # ナビゲーション構造
 nav:
   - ホーム: index.md
+  - プロジェクト企画:
+    - エレベーターピッチ: pitch/elevator-pitch.md
+  - 要件定義:
+    - 形式的要件定義: requirements/formal-requirements.md
+    - ステークホルダー分析: requirements/stakeholder-analysis.md
+  - 仕様:
+    - システム仕様: specifications/SPECIFICATIONS.md
+    - MVP定義: specifications/mvp-definition.md
   - アーキテクチャ:
     - architecture/index.md
     - クリーンアーキテクチャ: architecture/clean-architecture.md
@@ -130,6 +139,7 @@ nav:
     - BDDテスト戦略: architecture/bdd-test-strategy.md
   - 開発ガイド:
     - development/index.md
+    - インクリメンタル計画: development/incremental-plan.md
     - セットアップ: development/setup.md
     - 開発フロー: development/workflow.md
     - テスト: development/testing.md
@@ -143,6 +153,9 @@ nav:
     - Docker: deployment/docker.md
     - Kubernetes: deployment/kubernetes.md
     - CI/CD: deployment/cicd.md
+  - 統合管理:
+    - トレーサビリティマトリックス: integration/traceability-matrix.md
+    - 最終統合レポート: integration/final-integration-report.md
 
 # 追加CSS
 extra_css:
@@ -163,4 +176,4 @@ extra:
     provider: mike
 
 # 著作権
-copyright: Copyright &copy; 2024 WebRTC Agent Team
+copyright: Copyright &copy; zawaqkichi 2025
